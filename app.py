@@ -14,6 +14,8 @@ from config import (
 )
 from db import get_client, get_registrations, get_workshop_ids, has_certificate_sent_column
 from db import get_workshop_titles
+from db import mark_certificate_sent
+from email_sender import send_certificate_email
 from pdf_generator import generate_certificate, render_preview_image, safe_certificate_filename
 
 
@@ -42,6 +44,10 @@ if "cert_settings" not in st.session_state:
 
 settings = st.session_state.cert_settings
 settings["VERIFY_BASE_URL"] = config["VERIFY_BASE_URL"]
+settings["RESEND_API_KEY"] = config.get("RESEND_API_KEY")
+settings["RESEND_FROM_EMAIL"] = config.get("RESEND_FROM_EMAIL")
+settings["RESEND_FROM_NAME"] = config.get("RESEND_FROM_NAME")
+settings["STRINGS"] = STRINGS
 
 with st.sidebar:
     st.header(STRINGS["sidebar_title"])
@@ -127,16 +133,85 @@ metric_cols[2].metric(STRINGS["metrics_pending"], pending_count)
 
 table_rows = []
 for row in registrations:
+    status_value = "⏳ Pending"
+    sent_value = row.get("certificate_sent_at")
+    if sent_value:
+        status_value = f"✅ Sent ({sent_value})"
     item = {
         "full_name": row.get("full_name"),
         "email": row.get("email"),
         "created_at": row.get("created_at"),
+        "status": status_value,
     }
     if has_sent_column:
         item["certificate_sent_at"] = row.get("certificate_sent_at")
     table_rows.append(item)
 
 st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
+
+if not config.get("RESEND_API_KEY"):
+    st.warning("Email sending is disabled until `RESEND_API_KEY` is configured.")
+
+st.subheader("Email Delivery")
+pending_rows = [row for row in registrations if row.get("certificate_sent_at") is None]
+if st.button("Send All Pending", type="primary", disabled=not config.get("RESEND_API_KEY")):
+    progress = st.progress(0.0)
+    status_box = st.empty()
+    failures: list[dict[str, str]] = []
+    total_pending = len(pending_rows)
+    if total_pending == 0:
+        status_box.info("No pending registrations to send.")
+    else:
+        for index, registration in enumerate(pending_rows, start=1):
+            email = str(registration.get("email") or "")
+            name = str(registration.get("full_name") or "Participant")
+            status_box.info(f"Sending: {name}")
+            try:
+                pdf_bytes = generate_certificate(registration, settings, config["PDF_TEMPLATE_PATH"])
+                is_sent = send_certificate_email(registration, pdf_bytes, settings)
+                if is_sent:
+                    mark_certificate_sent(str(registration["id"]))
+                else:
+                    failures.append({"name": name, "email": email, "error": "send failed"})
+            except Exception as exc:
+                failures.append({"name": name, "email": email, "error": str(exc)})
+            progress.progress(index / total_pending)
+        status_box.success("Send-all run finished.")
+        if failures:
+            st.warning(f"{len(failures)} email(s) failed.")
+            st.dataframe(pd.DataFrame(failures), use_container_width=True, hide_index=True)
+        st.rerun()
+
+st.markdown("**Send per participant**")
+for registration in registrations:
+    full_name = str(registration.get("full_name") or "Participant")
+    email = str(registration.get("email") or "")
+    sent_at = registration.get("certificate_sent_at")
+    row_cols = st.columns([3, 3, 2, 2])
+    row_cols[0].write(full_name)
+    row_cols[1].write(email)
+    if sent_at:
+        row_cols[2].write(STRINGS["email_already_sent"].format(date=sent_at))
+        row_cols[3].button("Send", key=f"send_{registration.get('id')}", disabled=True)
+        continue
+
+    send_clicked = row_cols[3].button(
+        "Send",
+        key=f"send_{registration.get('id')}",
+        disabled=not config.get("RESEND_API_KEY"),
+    )
+    if send_clicked:
+        try:
+            pdf_bytes = generate_certificate(registration, settings, config["PDF_TEMPLATE_PATH"])
+            is_sent = send_certificate_email(registration, pdf_bytes, settings)
+            if is_sent:
+                mark_certificate_sent(str(registration["id"]))
+                st.success(STRINGS["email_send_success"].format(email=email))
+                st.rerun()
+            else:
+                st.error(STRINGS["email_send_failed"].format(email=email))
+        except Exception:
+            st.error(STRINGS["email_send_failed"].format(email=email))
 
 if not registrations:
     st.info("No registrations match your current filters.")

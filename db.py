@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from supabase import Client, create_client
@@ -79,3 +80,12 @@ def get_registration_by_short_id(short_id: str) -> dict[str, Any] | None:
     )
     rows = response.data or []
     return rows[0] if rows else None
+
+
+def mark_certificate_sent(registration_id: str) -> None:
+    if _default_client is None:
+        raise ValueError("Supabase client is not initialized. Call get_client() first.")
+    sent_at = datetime.now(timezone.utc).isoformat()
+    _default_client.table("workshop_registrations").update(
+        {"certificate_sent_at": sent_at}
+    ).eq("id", registration_id).execute()

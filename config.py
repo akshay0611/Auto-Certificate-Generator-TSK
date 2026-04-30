@@ -30,6 +30,10 @@ STRINGS = {
     "generate_all": "Generate All Certificates",
     "download_zip": "Download ZIP",
     "template_missing": "PDF template not found at configured path.",
+    "email_subject": "Your Certificate — {workshop_name}",
+    "email_already_sent": "Already sent on {date}",
+    "email_send_success": "Certificate sent to {email}",
+    "email_send_failed": "Failed to send to {email}",
 }
 
 DEFAULT_CERT_SETTINGS = {
@@ -91,6 +95,9 @@ def get_app_config() -> dict[str, Any]:
         "PDF_TEMPLATE_PATH": _get_secret_or_env("PDF_TEMPLATE_PATH", DEFAULT_TEMPLATE_PATH),
         "CERT_OUTPUT_DIR": _get_secret_or_env("CERT_OUTPUT_DIR", str(ROOT_DIR / "output")),
         "VERIFY_BASE_URL": _get_secret_or_env("VERIFY_BASE_URL", DEFAULT_VERIFY_BASE_URL),
+        "RESEND_API_KEY": _get_secret_or_env("RESEND_API_KEY"),
+        "RESEND_FROM_EMAIL": _get_secret_or_env("RESEND_FROM_EMAIL", "certificates@tensorik.in"),
+        "RESEND_FROM_NAME": _get_secret_or_env("RESEND_FROM_NAME", "Tensorik Technologies"),
     }
     return config
 
