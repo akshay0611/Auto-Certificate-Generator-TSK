@@ -10,6 +10,21 @@ from pypdf import PdfReader, PdfWriter
 from reportlab.lib.colors import HexColor
 from reportlab.pdfgen import canvas
 
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+ROOT_DIR = Path(__file__).resolve().parent
+
+while not (ROOT_DIR / "assets/fonts").exists():
+    ROOT_DIR = ROOT_DIR.parent
+
+def register_fonts():
+    pdfmetrics.registerFont(
+        TTFont("IBM_Plex_Regular", str(ROOT_DIR / "assets/fonts/IBMPlexSans-Regular.ttf"))
+    )
+
+register_fonts()
+
 
 def safe_certificate_filename(full_name: str, workshop_id: str) -> str:
     normalized_name = re.sub(r"\s+", "_", full_name.strip())

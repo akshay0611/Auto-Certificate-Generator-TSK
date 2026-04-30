@@ -46,7 +46,7 @@ DEFAULT_CERT_SETTINGS = {
     "name": {
         "x": 100,
         "y": 475,
-        "font_name": "Helvetica",
+        "font_name": "IBM_Plex_Regular",
         "font_size": 36,
         "color_hex": "#3A3A3A",
         "align": "left",
@@ -54,7 +54,7 @@ DEFAULT_CERT_SETTINGS = {
     "workshop": {
         "x": 100,
         "y": 326,
-        "font_name": "Helvetica",
+        "font_name": "IBM_Plex_Regular",
         "font_size": 28,
         "color_hex": "#3A3A3A",
         "align": "left",
@@ -62,7 +62,7 @@ DEFAULT_CERT_SETTINGS = {
     "date": {
         "x": 100,
         "y": 557,
-        "font_name": "Helvetica",
+        "font_name": "IBM_Plex_Regular",
         "font_size": 16,
         "color_hex": "#6F6F6F",
         "format": "%d %b %Y",
@@ -71,7 +71,7 @@ DEFAULT_CERT_SETTINGS = {
     "verify_text": {
         "x": 840,
         "y": 132,
-        "font_name": "Helvetica",
+        "font_name": "IBM_Plex_Regular",
         "font_size": 11,
         "color_hex": "#1A73E8",
         "align": "center",
