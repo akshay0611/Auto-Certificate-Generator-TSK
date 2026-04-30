@@ -1,0 +1,25 @@
+# Python cache/artifacts
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment/secrets
+.env
+.streamlit/secrets.toml
+
+# Build/output files
+output/
+*.zip
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,7 @@
+streamlit==1.44.1
+supabase==2.15.1
+pypdf==5.4.0
+reportlab==4.4.1
+pdf2image==1.17.0
+python-dotenv==1.1.0
+pandas==2.2.3
