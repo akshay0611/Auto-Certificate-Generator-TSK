@@ -8,7 +8,6 @@ from typing import Any
 
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 
@@ -24,18 +23,33 @@ def _draw_field(
     drawing_canvas: canvas.Canvas,
     value: str,
     field_settings: dict[str, Any],
+    url: str | None = None,
 ) -> None:
     drawing_canvas.setFillColor(HexColor(field_settings["color_hex"]))
     drawing_canvas.setFont(field_settings["font_name"], int(field_settings["font_size"]))
     align = str(field_settings.get("align", "center")).lower()
     x = float(field_settings["x"])
     y = float(field_settings["y"])
+    
     if align == "left":
         drawing_canvas.drawString(x, y, value)
     elif align == "right":
         drawing_canvas.drawRightString(x, y, value)
     else:
         drawing_canvas.drawCentredString(x, y, value)
+    
+    if url:
+        text_width = drawing_canvas.stringWidth(value, field_settings["font_name"], int(field_settings["font_size"]))
+        font_size = int(field_settings["font_size"])
+        # Adjusting the rectangle to better cover the text area
+        if align == "left":
+            rect = (x, y - 2, x + text_width, y + font_size)
+        elif align == "right":
+            rect = (x - text_width, y - 2, x, y + font_size)
+        else:
+            rect = (x - text_width / 2, y - 2, x + text_width / 2, y + font_size)
+        
+        drawing_canvas.linkURL(url, rect, relative=0, thickness=0)
 
 
 def _build_overlay(page_width: float, page_height: float, values: dict[str, str], settings: dict[str, Any]) -> io.BytesIO:
@@ -60,6 +74,7 @@ def _build_overlay(page_width: float, page_height: float, values: dict[str, str]
     _draw_field(overlay_canvas, values["name"], settings["name"])
     _draw_field(overlay_canvas, values["workshop"], settings["workshop"])
     _draw_field(overlay_canvas, values["date"], settings["date"])
+    _draw_field(overlay_canvas, values["verify_url"], settings["verify_text"], url=values["verify_url"])
     overlay_canvas.save()
     overlay_stream.seek(0)
     return overlay_stream
@@ -80,7 +95,18 @@ def generate_certificate(registration: dict[str, Any], settings: dict[str, Any],
     else:
         date_value = datetime.now().strftime(settings["date"].get("format", "%d %b %Y"))
 
-    values = {"name": full_name, "workshop": workshop_title, "date": date_value}
+    registration_id = str(registration.get("id") or "")
+    if not registration_id:
+        raise ValueError("Registration id is required to generate verification URL.")
+    short_id = registration_id[:6]
+    verify_url = f"{settings['VERIFY_BASE_URL'].rstrip('/')}/{short_id}"
+
+    values = {
+        "name": full_name,
+        "workshop": workshop_title,
+        "date": date_value,
+        "verify_url": verify_url,
+    }
 
     reader = PdfReader(template_path)
     page = reader.pages[0]

@@ -41,6 +41,7 @@ if "cert_settings" not in st.session_state:
     st.session_state.cert_settings = get_certificate_settings()
 
 settings = st.session_state.cert_settings
+settings["VERIFY_BASE_URL"] = config["VERIFY_BASE_URL"]
 
 with st.sidebar:
     st.header(STRINGS["sidebar_title"])
@@ -73,7 +74,7 @@ with st.sidebar:
         st.session_state.cert_settings = get_certificate_settings()
         settings = st.session_state.cert_settings
         st.success("Applied line-matched preset for date/name/workshop.")
-    for field in ("name", "workshop", "date"):
+    for field in ("name", "workshop", "date", "verify_text"):
         st.markdown(f"**{field.title()}**")
         settings[field]["x"] = st.slider(
             f"{field} X", 0, 2000, int(settings[field]["x"]), key=f"{field}_x"
