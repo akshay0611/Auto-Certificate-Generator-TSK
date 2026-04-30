@@ -95,10 +95,15 @@ def get_app_config() -> dict[str, Any]:
         "PDF_TEMPLATE_PATH": _get_secret_or_env("PDF_TEMPLATE_PATH", DEFAULT_TEMPLATE_PATH),
         "CERT_OUTPUT_DIR": _get_secret_or_env("CERT_OUTPUT_DIR", str(ROOT_DIR / "output")),
         "VERIFY_BASE_URL": _get_secret_or_env("VERIFY_BASE_URL", DEFAULT_VERIFY_BASE_URL),
-        "RESEND_API_KEY": _get_secret_or_env("RESEND_API_KEY"),
-        "RESEND_FROM_EMAIL": _get_secret_or_env("RESEND_FROM_EMAIL", "certificates@tensorik.in"),
-        "RESEND_FROM_NAME": _get_secret_or_env("RESEND_FROM_NAME", "Tensorik Technologies"),
+        "SMTP_HOST": _get_secret_or_env("SMTP_HOST", "smtp.gmail.com"),
+        "SMTP_PORT": _get_secret_or_env("SMTP_PORT", "587"),
+        "SMTP_USER": _get_secret_or_env("SMTP_USER"),
+        "SMTP_PASS": _get_secret_or_env("SMTP_PASS"),
+        "EMAIL_FROM_NAME": _get_secret_or_env("EMAIL_FROM_NAME", "Tensorik Technologies"),
     }
+    config["RESEND_API_KEY"] = config["SMTP_PASS"]
+    config["RESEND_FROM_EMAIL"] = config["SMTP_USER"]
+    config["RESEND_FROM_NAME"] = config["EMAIL_FROM_NAME"]
     return config
 
 
