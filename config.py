@@ -41,7 +41,7 @@ DEFAULT_CERT_SETTINGS = {
     },
     "name": {
         "x": 165,
-        "y": 490,
+        "y": 480,
         "font_name": "Helvetica",
         "font_size": 36,
         "color_hex": "#3A3A3A",
@@ -49,7 +49,7 @@ DEFAULT_CERT_SETTINGS = {
     },
     "workshop": {
         "x": 165,
-        "y": 382,
+        "y": 328,
         "font_name": "Helvetica",
         "font_size": 28,
         "color_hex": "#3A3A3A",
@@ -57,7 +57,7 @@ DEFAULT_CERT_SETTINGS = {
     },
     "date": {
         "x": 165,
-        "y": 578,
+        "y": 608,
         "font_name": "Helvetica",
         "font_size": 16,
         "color_hex": "#6F6F6F",
@@ -65,12 +65,12 @@ DEFAULT_CERT_SETTINGS = {
         "align": "left",
     },
     "verify_text": {
-        "x": 905,
-        "y": 126,
+        "x": 840,
+        "y": 132,
         "font_name": "Helvetica",
-        "font_size": 10,
-        "color_hex": "#6F6F6F",
-        "align": "left",
+        "font_size": 11,
+        "color_hex": "#1A73E8",
+        "align": "center",
     },
 }
 
