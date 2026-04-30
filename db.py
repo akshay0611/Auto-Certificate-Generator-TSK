@@ -4,9 +4,13 @@ from typing import Any
 
 from supabase import Client, create_client
 
+_default_client: Client | None = None
+
 
 def get_client(url: str, service_key: str) -> Client:
-    return create_client(url, service_key)
+    global _default_client
+    _default_client = create_client(url, service_key)
+    return _default_client
 
 
 def has_certificate_sent_column(client: Client) -> bool:
@@ -58,3 +62,20 @@ def get_registrations(client: Client, workshop_id: str) -> list[dict[str, Any]]:
             .execute()
         )
         return response.data or []
+
+
+def get_registration_by_short_id(short_id: str) -> dict[str, Any] | None:
+    if not short_id:
+        return None
+    if _default_client is None:
+        raise ValueError("Supabase client is not initialized. Call get_client() first.")
+
+    response = (
+        _default_client.table("workshop_registrations")
+        .select("id,full_name,email,created_at,workshop_id,certificate_sent_at")
+        .filter("id", "like", f"{short_id}%")
+        .limit(1)
+        .execute()
+    )
+    rows = response.data or []
+    return rows[0] if rows else None

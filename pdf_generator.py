@@ -8,7 +8,6 @@ from typing import Any
 
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 
@@ -60,6 +59,7 @@ def _build_overlay(page_width: float, page_height: float, values: dict[str, str]
     _draw_field(overlay_canvas, values["name"], settings["name"])
     _draw_field(overlay_canvas, values["workshop"], settings["workshop"])
     _draw_field(overlay_canvas, values["date"], settings["date"])
+    _draw_field(overlay_canvas, values["verify_url"], settings["verify_text"])
     overlay_canvas.save()
     overlay_stream.seek(0)
     return overlay_stream
@@ -80,7 +80,18 @@ def generate_certificate(registration: dict[str, Any], settings: dict[str, Any],
     else:
         date_value = datetime.now().strftime(settings["date"].get("format", "%d %b %Y"))
 
-    values = {"name": full_name, "workshop": workshop_title, "date": date_value}
+    registration_id = str(registration.get("id") or "")
+    if not registration_id:
+        raise ValueError("Registration id is required to generate verification URL.")
+    short_id = registration_id[:6]
+    verify_url = f"{settings['VERIFY_BASE_URL'].rstrip('/')}/{short_id}"
+
+    values = {
+        "name": full_name,
+        "workshop": workshop_title,
+        "date": date_value,
+        "verify_url": verify_url,
+    }
 
     reader = PdfReader(template_path)
     page = reader.pages[0]
