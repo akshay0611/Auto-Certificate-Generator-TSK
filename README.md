@@ -29,7 +29,7 @@ streamlit run app.py
 - `CERT_OUTPUT_DIR` (optional, default `./output`)
 
 ## Notes
-- Email delivery is intentionally excluded in this version.
+- Generate an App Password at `myaccount.google.com` → Security → 2-Step Verification → App Passwords. Use this as `SMTP_PASS`.
 - `pdf2image` requires Poppler:
   - macOS (Homebrew): `brew install poppler`
   - Ubuntu: `sudo apt-get install poppler-utils`
