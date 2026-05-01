@@ -20,6 +20,7 @@ def send_certificate_email(registration: dict[str, Any], pdf_bytes: bytes, setti
         smtp_pass = cfg.get("SMTP_PASS")
         email_from = cfg.get("EMAIL_FROM") or smtp_user
         email_from_name = cfg.get("EMAIL_FROM_NAME", "Tensorik Technologies")
+        email_bcc = cfg.get("EMAIL_BCC")
         strings = settings["STRINGS"]
 
         recipient_email = str(registration.get("email") or "").strip()
@@ -37,6 +38,8 @@ def send_certificate_email(registration: dict[str, Any], pdf_bytes: bytes, setti
         msg = MIMEMultipart()
         msg["From"] = f"{email_from_name} <{email_from}>"
         msg["To"] = recipient_email
+        if email_bcc:
+            msg["Bcc"] = email_bcc
         msg["Subject"] = strings["email_subject"].format(workshop_name=workshop_name)
 
         body = (
@@ -52,11 +55,15 @@ def send_certificate_email(registration: dict[str, Any], pdf_bytes: bytes, setti
         attachment.add_header("Content-Disposition", "attachment", filename=filename)
         msg.attach(attachment)
 
+        recipients = [recipient_email]
+        if email_bcc:
+            recipients.append(email_bcc)
+
         with smtplib.SMTP(smtp_host, smtp_port) as server:
             server.ehlo()
             server.starttls()
             server.login(smtp_user, smtp_pass)
-            server.sendmail(email_from, recipient_email, msg.as_string())
+            server.sendmail(email_from, recipients, msg.as_string())
 
         return True
     except Exception as exc:
