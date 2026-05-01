@@ -16,7 +16,11 @@ from reportlab.pdfbase.ttfonts import TTFont
 ROOT_DIR = Path(__file__).resolve().parent
 
 while not (ROOT_DIR / "assets/fonts").exists():
-    ROOT_DIR = ROOT_DIR.parent
+    parent = ROOT_DIR.parent
+    if parent == ROOT_DIR:
+        ROOT_DIR = Path(__file__).resolve().parent
+        break
+    ROOT_DIR = parent
 
 def register_fonts():
     pdfmetrics.registerFont(
@@ -40,31 +44,64 @@ def _draw_field(
     field_settings: dict[str, Any],
     url: str | None = None,
 ) -> None:
+    font_name = field_settings["font_name"]
+    font_size = float(field_settings["font_size"])
+    max_width = float(field_settings.get("max_width", 0))
+    line_spacing = 1.2
+    
+    # Auto-scale font size if max_width is set
+    if max_width > 0:
+        while font_size > 22:  # Preferred minimum size for aesthetics
+            text_width = drawing_canvas.stringWidth(value, font_name, font_size)
+            if text_width <= max_width:
+                break
+            font_size -= 1
+
+    # If still exceeds max_width, wrap into multiple lines
+    lines = [value]
+    if max_width > 0 and drawing_canvas.stringWidth(value, font_name, font_size) > max_width:
+        words = value.split()
+        lines = []
+        current_line = []
+        for word in words:
+            test_line = " ".join(current_line + [word])
+            if drawing_canvas.stringWidth(test_line, font_name, font_size) <= max_width:
+                current_line.append(word)
+            else:
+                if current_line:
+                    lines.append(" ".join(current_line))
+                    current_line = [word]
+                else:
+                    lines.append(word)
+                    current_line = []
+        if current_line:
+            lines.append(" ".join(current_line))
+
     drawing_canvas.setFillColor(HexColor(field_settings["color_hex"]))
-    drawing_canvas.setFont(field_settings["font_name"], int(field_settings["font_size"]))
+    drawing_canvas.setFont(font_name, font_size)
     align = str(field_settings.get("align", "center")).lower()
     x = float(field_settings["x"])
     y = float(field_settings["y"])
     
-    if align == "left":
-        drawing_canvas.drawString(x, y, value)
-    elif align == "right":
-        drawing_canvas.drawRightString(x, y, value)
-    else:
-        drawing_canvas.drawCentredString(x, y, value)
-    
-    if url:
-        text_width = drawing_canvas.stringWidth(value, field_settings["font_name"], int(field_settings["font_size"]))
-        font_size = int(field_settings["font_size"])
-        # Adjusting the rectangle to better cover the text area
-        if align == "left":
-            rect = (x, y - 2, x + text_width, y + font_size)
-        elif align == "right":
-            rect = (x - text_width, y - 2, x, y + font_size)
-        else:
-            rect = (x - text_width / 2, y - 2, x + text_width / 2, y + font_size)
+    for i, line in enumerate(lines):
+        line_y = y - (i * font_size * line_spacing)
         
-        drawing_canvas.linkURL(url, rect, relative=0, thickness=0)
+        if align == "left":
+            drawing_canvas.drawString(x, line_y, line)
+        elif align == "right":
+            drawing_canvas.drawRightString(x, line_y, line)
+        else:
+            drawing_canvas.drawCentredString(x, line_y, line)
+            
+        if url and i == 0:
+            text_width = drawing_canvas.stringWidth(line, font_name, font_size)
+            if align == "left":
+                rect = (x, line_y - 2, x + text_width, line_y + font_size)
+            elif align == "right":
+                rect = (x - text_width, line_y - 2, x, line_y + font_size)
+            else:
+                rect = (x - text_width / 2, line_y - 2, x + text_width / 2, line_y + font_size)
+            drawing_canvas.linkURL(url, rect, relative=0, thickness=0)
 
 
 def _build_overlay(page_width: float, page_height: float, values: dict[str, str], settings: dict[str, Any]) -> io.BytesIO:
