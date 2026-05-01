@@ -53,7 +53,7 @@ DEFAULT_CERT_SETTINGS = {
     },
     "workshop": {
         "x": 100,
-        "y": 326,
+        "y": 350,
         "font_name": "IBM_Plex_Regular",
         "font_size": 26.8,
         "color_hex": "#3A3A3A",

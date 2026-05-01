@@ -49,33 +49,33 @@ def _draw_field(
     max_width = float(field_settings.get("max_width", 0))
     line_spacing = 1.2
     
-    # Auto-scale font size if max_width is set
-    if max_width > 0:
-        while font_size > 22:  # Preferred minimum size for aesthetics
-            text_width = drawing_canvas.stringWidth(value, font_name, font_size)
-            if text_width <= max_width:
-                break
-            font_size -= 1
+    # Pre-process value for explicit splits (e.g., at colon for workshop titles)
+    input_lines = [value]
+    if ": " in value:
+        input_lines = value.split(": ", 1)
+        input_lines[0] = input_lines[0] + ":"
 
-    # If still exceeds max_width, wrap into multiple lines
-    lines = [value]
-    if max_width > 0 and drawing_canvas.stringWidth(value, font_name, font_size) > max_width:
-        words = value.split()
-        lines = []
-        current_line = []
-        for word in words:
-            test_line = " ".join(current_line + [word])
-            if drawing_canvas.stringWidth(test_line, font_name, font_size) <= max_width:
-                current_line.append(word)
-            else:
-                if current_line:
-                    lines.append(" ".join(current_line))
-                    current_line = [word]
+    final_lines = []
+    for part in input_lines:
+        # Check if part needs wrapping
+        if max_width > 0 and drawing_canvas.stringWidth(part, font_name, font_size) > max_width:
+            words = part.split()
+            current_line = []
+            for word in words:
+                test_line = " ".join(current_line + [word])
+                if drawing_canvas.stringWidth(test_line, font_name, font_size) <= max_width:
+                    current_line.append(word)
                 else:
-                    lines.append(word)
-                    current_line = []
-        if current_line:
-            lines.append(" ".join(current_line))
+                    if current_line:
+                        final_lines.append(" ".join(current_line))
+                        current_line = [word]
+                    else:
+                        final_lines.append(word)
+                        current_line = []
+            if current_line:
+                final_lines.append(" ".join(current_line))
+        else:
+            final_lines.append(part)
 
     drawing_canvas.setFillColor(HexColor(field_settings["color_hex"]))
     drawing_canvas.setFont(font_name, font_size)
@@ -83,7 +83,7 @@ def _draw_field(
     x = float(field_settings["x"])
     y = float(field_settings["y"])
     
-    for i, line in enumerate(lines):
+    for i, line in enumerate(final_lines):
         line_y = y - (i * font_size * line_spacing)
         
         if align == "left":
