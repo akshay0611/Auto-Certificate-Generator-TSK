@@ -18,6 +18,7 @@ def send_certificate_email(registration: dict[str, Any], pdf_bytes: bytes, setti
         smtp_port = int(cfg.get("SMTP_PORT", "587"))
         smtp_user = cfg.get("SMTP_USER")
         smtp_pass = cfg.get("SMTP_PASS")
+        email_from = cfg.get("EMAIL_FROM") or smtp_user
         email_from_name = cfg.get("EMAIL_FROM_NAME", "Tensorik Technologies")
         strings = settings["STRINGS"]
 
@@ -34,7 +35,7 @@ def send_certificate_email(registration: dict[str, Any], pdf_bytes: bytes, setti
         workshop_id = str(registration.get("workshop_id") or "workshop")
 
         msg = MIMEMultipart()
-        msg["From"] = f"{email_from_name} <{smtp_user}>"
+        msg["From"] = f"{email_from_name} <{email_from}>"
         msg["To"] = recipient_email
         msg["Subject"] = strings["email_subject"].format(workshop_name=workshop_name)
 
@@ -55,7 +56,7 @@ def send_certificate_email(registration: dict[str, Any], pdf_bytes: bytes, setti
             server.ehlo()
             server.starttls()
             server.login(smtp_user, smtp_pass)
-            server.sendmail(smtp_user, recipient_email, msg.as_string())
+            server.sendmail(email_from, recipient_email, msg.as_string())
 
         return True
     except Exception as exc:
