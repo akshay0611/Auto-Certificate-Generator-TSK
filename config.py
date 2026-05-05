@@ -47,7 +47,7 @@ DEFAULT_CERT_SETTINGS = {
         "x": 100,
         "y": 475,
         "font_name": "IBM_Plex_Regular",
-        "font_size": 51,
+        "font_size": 36,
         "color_hex": "#3A3A3A",
         "align": "left",
     },
