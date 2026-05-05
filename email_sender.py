@@ -11,7 +11,12 @@ from config import get_app_config
 from pdf_generator import safe_certificate_filename
 
 
-def send_certificate_email(registration: dict[str, Any], pdf_bytes: bytes, settings: dict[str, Any]) -> bool:
+def send_certificate_email(
+    registration: dict[str, Any],
+    pdf_bytes: bytes,
+    settings: dict[str, Any],
+    server: smtplib.SMTP | None = None,
+) -> bool:
     try:
         cfg = get_app_config()
         smtp_host = cfg.get("SMTP_HOST", "smtp.gmail.com")
@@ -59,11 +64,14 @@ def send_certificate_email(registration: dict[str, Any], pdf_bytes: bytes, setti
         if email_bcc:
             recipients.append(email_bcc)
 
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
+        if server:
             server.sendmail(email_from, recipients, msg.as_string())
+        else:
+            with smtplib.SMTP(smtp_host, smtp_port) as server_conn:
+                server_conn.ehlo()
+                server_conn.starttls()
+                server_conn.login(smtp_user, smtp_pass)
+                server_conn.sendmail(email_from, recipients, msg.as_string())
 
         return True
     except Exception as exc:

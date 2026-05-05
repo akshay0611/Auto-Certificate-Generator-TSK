@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import time
+import smtplib
 import pandas as pd
 import streamlit as st
 
@@ -149,12 +151,12 @@ for row in registrations:
 
 st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
 
-if not config.get("RESEND_API_KEY"):
-    st.warning("Email sending is disabled until `RESEND_API_KEY` is configured.")
+if not config.get("SMTP_PASS"):
+    st.warning("Email sending is disabled until `SMTP_PASS` is configured in `.env`.")
 
 st.subheader("Email Delivery")
 pending_rows = [row for row in registrations if row.get("certificate_sent_at") is None]
-if st.button("Send All Pending", type="primary", disabled=not config.get("RESEND_API_KEY")):
+if st.button("Send All Pending", type="primary", disabled=not config.get("SMTP_PASS")):
     progress = st.progress(0.0)
     status_box = st.empty()
     failures: list[dict[str, str]] = []
@@ -162,20 +164,40 @@ if st.button("Send All Pending", type="primary", disabled=not config.get("RESEND
     if total_pending == 0:
         status_box.info("No pending registrations to send.")
     else:
-        for index, registration in enumerate(pending_rows, start=1):
-            email = str(registration.get("email") or "")
-            name = str(registration.get("full_name") or "Participant")
-            status_box.info(f"Sending: {name}")
-            try:
-                pdf_bytes = generate_certificate(registration, settings, config["PDF_TEMPLATE_PATH"])
-                is_sent = send_certificate_email(registration, pdf_bytes, settings)
-                if is_sent:
-                    mark_certificate_sent(str(registration["id"]))
-                else:
-                    failures.append({"name": name, "email": email, "error": "send failed"})
-            except Exception as exc:
-                failures.append({"name": name, "email": email, "error": str(exc)})
-            progress.progress(index / total_pending)
+        try:
+            smtp_host = config.get("SMTP_HOST", "smtp.gmail.com")
+            smtp_port = int(config.get("SMTP_PORT", "587"))
+            smtp_user = config.get("SMTP_USER")
+            smtp_pass = config.get("SMTP_PASS")
+
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+
+                for index, registration in enumerate(pending_rows, start=1):
+                    email = str(registration.get("email") or "")
+                    name = str(registration.get("full_name") or "Participant")
+                    status_box.info(f"Sending ({index}/{total_pending}): {name}")
+                    try:
+                        pdf_bytes = generate_certificate(registration, settings, config["PDF_TEMPLATE_PATH"])
+                        is_sent = send_certificate_email(registration, pdf_bytes, settings, server=server)
+                        if is_sent:
+                            mark_certificate_sent(str(registration["id"]))
+                        else:
+                            failures.append({"name": name, "email": email, "error": "send failed"})
+                    except Exception as exc:
+                        failures.append({"name": name, "email": email, "error": str(exc)})
+                    
+                    progress.progress(index / total_pending)
+                    
+                    # Delay to avoid rate limits (Hostinger has strict limits)
+                    if index < total_pending:
+                        time.sleep(2) 
+        except Exception as exc:
+            st.error(f"SMTP Connection Error: {exc}")
+            status_box.error(f"Batch sending aborted: {exc}")
+
         status_box.success("Send-all run finished.")
         if failures:
             st.warning(f"{len(failures)} email(s) failed.")
@@ -198,7 +220,7 @@ for registration in registrations:
     send_clicked = row_cols[3].button(
         "Send",
         key=f"send_{registration.get('id')}",
-        disabled=not config.get("RESEND_API_KEY"),
+        disabled=not config.get("SMTP_PASS"),
     )
     if send_clicked:
         try:

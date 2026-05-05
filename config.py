@@ -103,7 +103,7 @@ def get_app_config() -> dict[str, Any]:
         "EMAIL_FROM_NAME": _get_secret_or_env("EMAIL_FROM_NAME", "Tensorik Technologies"),
         "EMAIL_BCC": _get_secret_or_env("EMAIL_BCC"),
     }
-    config["RESEND_API_KEY"] = config["SMTP_PASS"]
+    config["RESEND_API_KEY"] = _get_secret_or_env("RESEND_API_KEY")
     config["RESEND_FROM_EMAIL"] = config.get("EMAIL_FROM") or config["SMTP_USER"]
     config["RESEND_FROM_NAME"] = config["EMAIL_FROM_NAME"]
     config["RESEND_BCC"] = config.get("EMAIL_BCC")
